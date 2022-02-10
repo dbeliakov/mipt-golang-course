@@ -1,0 +1,582 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Программирование на языке Go</title>
+    <meta charset='utf-8'>
+    <link rel="icon" href="static/favicon.ico">
+    <script>
+      var notesEnabled =  false ;
+    </script>
+    <script src='static/slides.js'></script>
+
+    
+
+    <script>
+      
+      if (window["location"] && window["location"]["hostname"] == "talks.golang.org") {
+        var _gaq = _gaq || [];
+        _gaq.push(["_setAccount", "UA-11222381-6"]);
+        _gaq.push(["b._setAccount", "UA-49880327-6"]);
+        window.trackPageview = function() {
+          _gaq.push(["_trackPageview", location.pathname+location.hash]);
+          _gaq.push(["b._trackPageview", location.pathname+location.hash]);
+        };
+        window.trackPageview();
+        window.trackEvent = function(category, action, opt_label, opt_value, opt_noninteraction) {
+          _gaq.push(["_trackEvent", category, action, opt_label, opt_value, opt_noninteraction]);
+          _gaq.push(["b._trackEvent", category, action, opt_label, opt_value, opt_noninteraction]);
+        };
+      }
+    </script>
+  </head>
+
+  <body style='display: none'>
+
+    <section class='slides layout-widescreen'>
+
+      <article>
+        <h1>Программирование на языке Go</h1>
+        
+        
+        
+          <div class="presenter">
+            
+  
+  <p>
+    Лекция 1. Введение
+  </p>
+  
+
+          </div>
+        
+      </article>
+
+  
+  
+      <article >
+      
+        <h3>Полезные ссылки</h3>
+        <ul>
+<li><a href="https://golang.org/" target="_blank" rel="noopener">Официальный сайт</a></li>
+<li><a href="https://play.golang.org/" target="_blank" rel="noopener">The Go Playground</a></li>
+<li><a href="https://www.gopl.io/" target="_blank" rel="noopener">The Go Programming Language</a> (есть на русском языке)</li>
+</ul>
+
+      
+      <span class="pagenumber">2</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Отчетность</h3>
+        <ul>
+<li>Небольшие домашние задания после семинаров (проверяются автоматикой)</li>
+<li>Вероятно, один или несколько больших проектов (проверяются вручную)</li>
+<li>Коммуникация - через телеграм-чат</li>
+</ul>
+
+      
+      <span class="pagenumber">3</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Язык Go</h3>
+        <p><strong>Go</strong> (часто также <strong>Golang</strong>) — компилируемый многопоточный язык программирования, разработанный внутри компании Google.</p>
+<p>Официально язык был представлен в ноябре 2009 года.</p>
+<p>Разрабатывался как язык программирования для создания высокоэффективных программ,
+работающих на <strong>современных распределённых системах</strong> и <strong>многоядерных процессорах</strong>.</p>
+
+      
+      <span class="pagenumber">4</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Язык Go</h3>
+        <p>Среди недостатков других языков, с которыми боролись создатели Go, можно выделить:</p>
+<ul>
+<li>Медленная сборка программ</li>
+<li>Неконтролируемые зависимости</li>
+<li>Сложность языковых конструкций, множество способов решить задачу</li>
+<li>Отсутствие поддержки конкурентных программ на ровне языка, следствие - неудобство разработки</li>
+<li>Затруднения с пониманием программ, вызванные неудобочитаемостью кода, плохим документированием и так далее</li>
+<li>Сложность разработки инструментария</li>
+</ul>
+
+      
+      <span class="pagenumber">5</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Язык Go</h3>
+        <p>Основными требованиями к языку стали:</p>
+<ul>
+<li>Ортогональность</li>
+<li>Простая и регулярная грамматика</li>
+<li>Простая работа с типами</li>
+<li>Отсутствие неявных преобразований</li>
+<li>Сборка мусора</li>
+<li>Встроенные средства распараллеливания, простые и эффективные</li>
+<li>Поддержка строк (unicode), ассоциативных массивов и коммуникационных каналов</li>
+<li>Чёткое разделение интерфейса и реализации</li>
+<li>Эффективная система пакетов с явным указанием зависимостей, обеспечивающая быструю сборку</li>
+</ul>
+
+      
+      <span class="pagenumber">6</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Язык Go</h3>
+        <p>Возможности языка:</p>
+<ul>
+<li>Строгая статическая типизация</li>
+<li>Полноценная поддержка указателей, но без арифметики</li>
+<li>Строковый тип с поддержкой unicode</li>
+<li>Средства функционального программирования</li>
+<li>Автоматическое управление памятью со сборщиком мусора</li>
+<li>Средства параллельного и конкурентного программирования</li>
+</ul>
+
+      
+      <span class="pagenumber">7</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Язык Go</h3>
+        <p>Отличия Go от других популярных языков:</p>
+<ul>
+<li>Отсутствие исключений, явная обработка ошибок (в &quot;стиле C&quot;)</li>
+<li>Отсутствие наследования (вместо - вложение типов)</li>
+<li>Отсутствие дженериков (но совсем скоро будут)</li>
+<li>Отсутствует возможность переопределять методы и функции</li>
+<li>Ряд ограничений, приводяций к усложнению или ошибкам: некоторые операции над массивами, поддержка отрицательных индексов, принцип &quot;любое выражение возвращает значение&quot;</li>
+</ul>
+
+      
+      <span class="pagenumber">8</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Hello, world</h3>
+        
+  <div class="code" >
+<pre><span num="1">package main</span>
+<span num="2"></span>
+<span num="3">import &#34;fmt&#34;</span>
+<span num="4"></span>
+<span num="5">func main() {</span>
+<span num="6">    fmt.Println(&#34;Hello, world!&#34;)</span>
+<span num="7">}</span>
+</pre>
+</div>
+
+      
+      <span class="pagenumber">9</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Echo</h3>
+        
+  <div class="code" >
+<pre><span num="1">package main</span>
+<span num="2"></span>
+<span num="3">import (</span>
+<span num="4">    &#34;fmt&#34;</span>
+<span num="5">    &#34;os&#34;</span>
+<span num="6">)</span>
+<span num="7"></span>
+<span num="8">func main() {</span>
+<span num="9">    var s, sep string</span>
+<span num="10">    for i := 1; i &lt; len(os.Args); i&#43;&#43; {</span>
+<span num="11">        s &#43;= sep &#43; os.Args[i]</span>
+<span num="12">        sep = &#34; &#34;</span>
+<span num="13">    }</span>
+<span num="14">    fmt.Println(s)</span>
+<span num="15">}</span>
+</pre>
+</div>
+
+      
+      <span class="pagenumber">10</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>For loop</h3>
+        <pre><code>for initialization; condition; post {
+    // statements
+}
+
+for condition {
+    // statements
+}
+
+
+for {
+	// statements
+}</code></pre>
+
+      
+      <span class="pagenumber">11</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Echo2</h3>
+        
+  <div class="code" >
+<pre><span num="1">package main</span>
+<span num="2"></span>
+<span num="3">import (</span>
+<span num="4">    &#34;fmt&#34;</span>
+<span num="5">    &#34;os&#34;</span>
+<span num="6">)</span>
+<span num="7"></span>
+<span num="8">func main() {</span>
+<span num="9">    s, sep := &#34;&#34;, &#34;&#34;</span>
+<span num="10">    for _, arg := range os.Args[1:] {</span>
+<span num="11">        s &#43;= sep &#43; arg</span>
+<span num="12">        sep = &#34; &#34;</span>
+<span num="13">    }</span>
+<span num="14">    fmt.Println(s)</span>
+<span num="15">}</span>
+</pre>
+</div>
+
+      
+      <span class="pagenumber">12</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Variables</h3>
+        <pre><code>    s := &quot;&quot;
+    var s string
+    var s = &quot;&quot;
+    var s string = &quot;&quot;
+</code></pre>
+<p>Последние два варианта используются редко, в основном - первые два</p>
+
+      
+      <span class="pagenumber">13</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Echo3</h3>
+        
+  <div class="code" >
+<pre><span num="1">package main</span>
+<span num="2"></span>
+<span num="3">import (</span>
+<span num="4">    &#34;fmt&#34;</span>
+<span num="5">    &#34;os&#34;</span>
+<span num="6">    &#34;strings&#34;</span>
+<span num="7">)</span>
+<span num="8"></span>
+<span num="9">func main() {</span>
+<span num="10">    fmt.Println(strings.Join(os.Args[1:], &#34; &#34;))</span>
+<span num="11">}</span>
+</pre>
+</div>
+
+      
+      <span class="pagenumber">14</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Dup</h3>
+        
+  <div class="code" >
+<pre><span num="1">package main</span>
+<span num="2"></span>
+<span num="3">import (</span>
+<span num="4">    &#34;bufio&#34;</span>
+<span num="5">    &#34;fmt&#34;</span>
+<span num="6">    &#34;os&#34;</span>
+<span num="7">)</span>
+<span num="8"></span>
+<span num="9">func main() {</span>
+<span num="10">    counts := make(map[string]int)</span>
+<span num="11">    input := bufio.NewScanner(os.Stdin)</span>
+<span num="12">    for input.Scan() {</span>
+<span num="13">        counts[input.Text()]&#43;&#43;</span>
+<span num="14">    }</span>
+<span num="15">    // NOTE: ignoring potential errors from input.Err()</span>
+<span num="16">    for line, n := range counts {</span>
+<span num="17">        if n &gt; 1 {</span>
+<span num="18">            fmt.Printf(&#34;%d\t%s\n&#34;, n, line)</span>
+<span num="19">        }</span>
+<span num="20">    }</span>
+<span num="21">}</span>
+</pre>
+</div>
+
+      
+      <span class="pagenumber">15</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Formatting</h3>
+        <p>Функции форматирования заканчиваются на <code>f</code>. <code>fmt.Errorf</code>, <code>log.Printf</code>.</p>
+<pre><code>    %d         decimal integer
+    %x, %o, %b integer in hexade cimal, octal, binary
+    %f, %g, %e floating-point number: 3.141593 3.141592653589793 3.141593e+00
+    %t         boolean: true or false
+    %c         rune (Unicode code point)
+    %s         string
+    %q         quoted string &quot;abc&quot; or rune 'c'
+    %v         any value in a natural format
+    %T         type of any value
+    %%         literal percent sign (no operand)</code></pre>
+
+      
+      <span class="pagenumber">16</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Dup2</h3>
+        
+  <div class="code" >
+<pre><span num="9">func main() {</span>
+<span num="10">    counts := make(map[string]int)</span>
+<span num="11">    files := os.Args[1:]</span>
+<span num="12">    if len(files) == 0 {</span>
+<span num="13">        countLines(os.Stdin, counts)</span>
+<span num="14">    } else {</span>
+<span num="15">        for _, arg := range files {</span>
+<span num="16">            f, err := os.Open(arg)</span>
+<span num="17">            if err != nil {</span>
+<span num="18">                fmt.Fprintf(os.Stderr, &#34;dup2: %v\n&#34;, err)</span>
+<span num="19">                continue</span>
+<span num="20">            }</span>
+<span num="21">            countLines(f, counts)</span>
+<span num="22">            f.Close()</span>
+<span num="23">        }</span>
+<span num="24">    }</span>
+<span num="25">    for line, n := range counts {</span>
+<span num="26">        if n &gt; 1 {</span>
+<span num="27">            fmt.Printf(&#34;%d\t%s\n&#34;, n, line)</span>
+<span num="28">        }</span>
+<span num="29">    }</span>
+<span num="30">}</span>
+</pre>
+</div>
+
+      
+      <span class="pagenumber">17</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Dup3</h3>
+        
+  <div class="code" >
+<pre><span num="10">func main() {</span>
+<span num="11">    counts := make(map[string]int)</span>
+<span num="12">    for _, filename := range os.Args[1:] {</span>
+<span num="13">        data, err := ioutil.ReadFile(filename)</span>
+<span num="14">        if err != nil {</span>
+<span num="15">            fmt.Fprintf(os.Stderr, &#34;dup3: %v\n&#34;, err)</span>
+<span num="16">            continue</span>
+<span num="17">        }</span>
+<span num="18">        for _, line := range strings.Split(string(data), &#34;\n&#34;) {</span>
+<span num="19">            counts[line]&#43;&#43;</span>
+<span num="20">        }</span>
+<span num="21">    }</span>
+<span num="22">    for line, n := range counts {</span>
+<span num="23">        if n &gt; 1 {</span>
+<span num="24">            fmt.Printf(&#34;%d\t%s\n&#34;, n, line)</span>
+<span num="25">        }</span>
+<span num="26">    }</span>
+<span num="27">}</span>
+</pre>
+</div>
+
+      
+      <span class="pagenumber">18</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Fetch</h3>
+        
+  <div class="code" >
+<pre><span num="1">package main</span>
+<span num="2"></span>
+<span num="3">import (</span>
+<span num="4">    &#34;fmt&#34;</span>
+<span num="5">    &#34;io/ioutil&#34;</span>
+<span num="6">    &#34;net/http&#34;</span>
+<span num="7">    &#34;os&#34;</span>
+<span num="8">)</span>
+<span num="9"></span>
+<span num="10">func main() {</span>
+<span num="11">    for _, url := range os.Args[1:] {</span>
+<span num="12">        resp, err := http.Get(url)</span>
+<span num="13">        if err != nil {</span>
+<span num="14">            fmt.Fprintf(os.Stderr, &#34;fetch: %v\n&#34;, err)</span>
+<span num="15">            os.Exit(1)</span>
+<span num="16">        }</span>
+<span num="17">        b, err := ioutil.ReadAll(resp.Body)</span>
+<span num="18">        resp.Body.Close()</span>
+<span num="19">        if err != nil {</span>
+<span num="20">            fmt.Fprintf(os.Stderr, &#34;fetch: reading %s: %v\n&#34;, url, err)</span>
+<span num="21">            os.Exit(1)</span>
+<span num="22">        }</span>
+<span num="23">        fmt.Printf(&#34;%s&#34;, b)</span>
+<span num="24">    }</span>
+<span num="25">}</span>
+</pre>
+</div>
+
+      
+      <span class="pagenumber">19</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>FetchAll</h3>
+        
+  <div class="code" >
+<pre><span num="12">func main() {</span>
+<span num="13">    start := time.Now()</span>
+<span num="14">    ch := make(chan string)</span>
+<span num="15">    for _, url := range os.Args[1:] {</span>
+<span num="16">        go fetch(url, ch) // start a goroutine</span>
+<span num="17">    }</span>
+<span num="18">    for range os.Args[1:] {</span>
+<span num="19">        fmt.Println(&lt;-ch) // receive from channel ch</span>
+<span num="20">    }</span>
+<span num="21">    fmt.Printf(&#34;%.2fs elapsed\n&#34;, time.Since(start).Seconds())</span>
+<span num="22">}</span>
+</pre>
+</div>
+
+      
+      <span class="pagenumber">20</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>FetchAll</h3>
+        
+  <div class="code" >
+<pre><span num="24">func fetch(url string, ch chan&lt;- string) {</span>
+<span num="25">    start := time.Now()</span>
+<span num="26">    resp, err := http.Get(url)</span>
+<span num="27">    if err != nil {</span>
+<span num="28">        ch &lt;- fmt.Sprint(err) // send to channel ch</span>
+<span num="29">        return</span>
+<span num="30">    }</span>
+<span num="31"></span>
+<span num="32">    nbytes, err := io.Copy(ioutil.Discard, resp.Body)</span>
+<span num="33">    resp.Body.Close() // don&#39;t leak resources</span>
+<span num="34">    if err != nil {</span>
+<span num="35">        ch &lt;- fmt.Sprintf(&#34;while reading %s: %v&#34;, url, err)</span>
+<span num="36">        return</span>
+<span num="37">    }</span>
+<span num="38">    secs := time.Since(start).Seconds()</span>
+<span num="39">    ch &lt;- fmt.Sprintf(&#34;%.2fs  %7d  %s&#34;, secs, nbytes, url)</span>
+<span num="40">}</span>
+</pre>
+</div>
+
+      
+      <span class="pagenumber">21</span>
+      </article>
+  
+  
+
+      <article>
+        <h3>Thank you</h3>
+        
+          <div class="presenter">
+            
+  
+  <p>
+    Лекция 1. Введение
+  </p>
+  
+
+          </div>
+        
+      </article>
+
+    </section>
+
+    <div id="help">
+      Use the left and right arrow keys or click the left and right
+      edges of the page to navigate between slides.<br>
+      (Press 'H' or navigate to hide this message.)
+    </div>
+
+    
+    <script src='static/jquery.js'></script>
+    <script src='static/jquery-ui.js'></script>
+    <script src='static/playground.js'></script>
+    <script src='static/play.js'></script>
+    <script>initPlayground(new HTTPTransport());</script>
+    
+
+    <script>
+      (function() {
+        
+        if (window["location"] && window["location"]["hostname"] == "talks.golang.org") {
+          var ga = document.createElement("script"); ga.type = "text/javascript"; ga.async = true;
+          ga.src = ("https:" == document.location.protocol ? "https://ssl" : "http://www") + ".google-analytics.com/ga.js";
+          var s = document.getElementsByTagName("script")[0]; s.parentNode.insertBefore(ga, s);
+        }
+      })();
+    </script>
+  </body>
+</html>
