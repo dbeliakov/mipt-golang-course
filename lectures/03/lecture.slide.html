@@ -1,0 +1,656 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Программирование на языке Go</title>
+    <meta charset='utf-8'>
+    <link rel="icon" href="static/favicon.ico">
+    <script>
+      var notesEnabled =  false ;
+    </script>
+    <script src='static/slides.js'></script>
+
+    
+
+    <script>
+      
+      if (window["location"] && window["location"]["hostname"] == "talks.golang.org") {
+        var _gaq = _gaq || [];
+        _gaq.push(["_setAccount", "UA-11222381-6"]);
+        _gaq.push(["b._setAccount", "UA-49880327-6"]);
+        window.trackPageview = function() {
+          _gaq.push(["_trackPageview", location.pathname+location.hash]);
+          _gaq.push(["b._trackPageview", location.pathname+location.hash]);
+        };
+        window.trackPageview();
+        window.trackEvent = function(category, action, opt_label, opt_value, opt_noninteraction) {
+          _gaq.push(["_trackEvent", category, action, opt_label, opt_value, opt_noninteraction]);
+          _gaq.push(["b._trackEvent", category, action, opt_label, opt_value, opt_noninteraction]);
+        };
+      }
+    </script>
+  </head>
+
+  <body style='display: none'>
+
+    <section class='slides layout-widescreen'>
+
+      <article>
+        <h1>Программирование на языке Go</h1>
+        
+        
+        
+          <div class="presenter">
+            
+  
+  <p>
+    Лекция 3. Составные типы. Ошибки
+  </p>
+  
+
+          </div>
+        
+      </article>
+
+  
+  
+      <article >
+      
+        <h3>Массивы</h3>
+        <ul>
+<li>
+<p>Последовательность элементов определенного типа фиксированной длины (&gt;=0)</p>
+</li>
+<li>
+<p>В основном используются слайсы, которые построены на массивах</p>
+</li>
+<li>
+<p><code>[2]int</code> и <code>[3]int</code> - два разных типа. Размер должен быть константным выражением</p>
+</li>
+<li>
+<p>Поддерживаются операции доступа по индексу и итерация через <code>range</code></p>
+<pre><code>  var a [3]int
+  fmt.Println(a[0])
+  fmt.Println(a[len(a)-1])
+  for i, v := range a {...}
+</code></pre>
+</li>
+<li>
+<p>Возможна инициализация через <code>{}</code>, в том числе с указанием индексов</p>
+<pre><code>  var q [3]int = [3]int{1, 2, 3}
+  var p = [...]int{1, 2, 3}
+  symbol := [...]string{USD: &quot;$&quot;, EUR: &quot;9&quot;, GBP: &quot;!&quot;, RMB: &quot;&quot;&quot;}
+  fmt.Println(RMB, symbol[RMB])</code></pre>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">2</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Массивы</h3>
+        <ul>
+<li>Если элементы массива сравнимы, то сравнимы и массивы</li>
+<li>Передача массива в функцию приводит к копированию всех элементов, что неэффективно для массивов большого размера</li>
+</ul>
+
+      
+      <span class="pagenumber">3</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Слайсы</h3>
+        <ul>
+<li>
+<p>Последовательность элементов определенного типа изменяемой длины</p>
+</li>
+<li>
+<p>Данные на самом деле хранятся в массиве, который реаллоцируется при заполнении</p>
+</li>
+<li>
+<p>Фактически, это структура, хранящая указатель на массив, текущую длину и максимальную вместительность</p>
+<pre><code>  type slice struct {
+      array unsafe.Pointer
+      len   int
+      cap   int
+  }
+
+  s := make([]int, 0, 3)
+  len(s) // 0
+  cap(s) // 3
+</code></pre>
+</li>
+<li>
+<p>При передаче в функцию копируется структура <code>slice</code>, но указатель ссылается на те же данные.
+Это приводит к набору спецэффектов, которые надо иметь ввиду</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">4</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Слайсы</h3>
+        <ul>
+<li>
+<p>Несколько слайсов могут ссылать на один и тот же массив (т.е. изменение элемента через любой из
+этих слайсов видно остальным)</p>
+</li>
+<li>
+<p>Оператор <code>[i:j]</code>, <code>0 &lt;= i &lt;= j &lt;= cap(s)</code> создает новый слайс, который начинается с iго элемента
+родительского слайса и имеет соотвествующие длину и capacity</p>
+<pre><code>  s := []int{0, 1, 2}
+  s2 := s[1:]
+  s2[0] = 3
+  fmt.Println(s) // [0, 3, 2]
+</code></pre>
+</li>
+<li>
+<p>Сабслайс с границей большей чем <code>cap(s)</code> приводит к панике, но с границей,
+большей <code>len(s)</code> валидно (так что сабслайс может быть больше, чем исходный)</p>
+</li>
+<li>
+<p>Единственное валидное сравнение для слайса через <code>==</code> - сравнение с nil</p>
+</li>
+<li>
+<p>Слайс, инициализированный nil - валидный для добавления элементов слайс длины 0 и capacity 0.
+Однако, обратное не верно - пустой слайс не то же самое, что nil</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">5</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>append</h3>
+        <ul>
+<li>Встроенная функция <code>append</code> принимает слайс и элементы и возвращает новый слайс (т.е. <code>type slice</code>) с добавленными элементами в конце</li>
+<li>append может как вызвать реаллокацию исходного массива (и тогда исходный слайс и новый будут иметь под собой разные массивы),
+так и возвращать новый слайс на основе того же массива</li>
+<li>Об этом надо всегда помнить, так как иначе можно получить неожиданное поведение</li>
+</ul>
+
+      
+      <span class="pagenumber">6</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>append</h3>
+        <pre><code>    func appendInt(x []int, y int) []int {
+        var z []int
+        zlen := len(x) + 1
+        if zlen &lt;= cap(x) {
+            // There is room to grow.  Extend the slice.
+            z = x[:zlen]
+        } else {
+            // There is insufficient space.  Allocate a new array.
+            // Grow by doubling, for amortized linear complexity.
+            zcap := zlen
+            if zcap &lt; 2*len(x) {
+                zcap = 2 * len(x)
+            }
+            z = make([]int, zlen, zcap)
+            copy(z, x) // a built-in function; see text
+        }
+        z[len(x)] = y
+        return z
+    }</code></pre>
+
+      
+      <span class="pagenumber">7</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>In-Place операции</h3>
+        <ul>
+<li>
+<p>Многие операции над слайсами (в основном фильтрацию) можно выполнить in-place, что будет эффективнее, чем аллоцировать
+место под новые элементы</p>
+<pre><code>  var a = []int{0, 1, -1, 2, -2}
+  filtered := a[:0] // len=0, cap=5
+  for _, el := range a {
+      if el &gt; 0 {
+          filtered = append(filtered, el)
+      }
+  }
+  fmt.Println(filtered, len(filtered), cap(filtered)) // [1 2] 2 5
+  fmt.Println(a, len(a), cap(a)) // [1 2 -1 2 -2] 5 5</code></pre>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">8</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>In-Place операции</h3>
+        <ul>
+<li>
+<p>Для удаление элемента из начала или конца можно использовать <code>[i:j]</code>. При следующей реаллокации
+&quot;забытые&quot; элементы не копируются</p>
+<pre><code>  func push(q []int, el int) []int {
+      return append(q, el)
+  }
+
+  func pop(q []int) []int {
+      return q[1:]
+  }
+
+  var q []int // [] 0 0
+  q = push(q, 1) // [1] 1 1
+  q = push(q, 2) // [1 2] 2 2
+  q = pop(q) // [2] 1 1
+  q = push(q, 3) // [2 3] 2 2</code></pre>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">9</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Другие операции над слайсами</h3>
+        <ul>
+<li>
+<p>Удаление и вставка в середину - дорогая операция</p>
+<pre><code>  var a = []int{0, 1, 3, 5}
+  a = append(a[:2+1], a[2:]...)
+  a[2] = 2
+  fmt.Println(a) // [0 1 2 3 5]
+
+  var a = []int{0, 1, 2, 3, 5}
+  a = append(a[:2], a[3:]...)
+  fmt.Println(a) // [0 1 3 5]</code></pre>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">10</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Ассоциативные массивы (maps)</h3>
+        <ul>
+<li>
+<p>Unordered ассоциативный массив на основе hash-таблицы</p>
+</li>
+<li>
+<p>Аналогично слайсам, map - структура, хранящая указатели данные</p>
+</li>
+<li>
+<p>Однако, операции над map более инкапсулированы</p>
+<pre><code>  type hmap struct {
+  // Note: the format of the hmap is also encoded in cmd/compile/internal/gc/reflect.go.
+  // Make sure this stays in sync with the compiler's definition.
+  count     int // # live cells == size of map.  Must be first (used by len() builtin)
+  flags     uint8
+  B         uint8  // log_2 of # of buckets (can hold up to loadFactor * 2^B items)
+  noverflow uint16 // approximate number of overflow buckets; see incrnoverflow for details
+  hash0     uint32 // hash seed
+
+  buckets    unsafe.Pointer // array of 2^B Buckets. may be nil if count==0.
+  oldbuckets unsafe.Pointer // previous bucket array of half the size, non-nil only when growing
+  nevacuate  uintptr        // progress counter for evacuation (buckets less than this have been evacuated)
+
+  extra *mapextra // optional fields
+</code></pre>
+<p>}</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">11</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Maps</h3>
+        <ul>
+<li>
+<p>Ключ должен быть сравним через оператор <code>==</code> (однако, использовать в качестве ключа <code>float</code> типы зачастую плохая идея)</p>
+</li>
+<li>
+<p>Для использования map необходимо инициализировать через <code>make</code> или <code>{}</code>. В противном случае при попытке вставить элемент
+будет panic (в отличии от слайсов, где nil - валидный слайс)</p>
+<pre><code>  var m = make(map[string]int)
+  var m2 = map[string]int{
+      &quot;one&quot;: 1,
+  }
+</code></pre>
+</li>
+<li>
+<p>map можно сравнивать (==) с nil</p>
+</li>
+<li>
+<p>При обращении к несуществующему элементу будет возвращено zero value и (необязательный) флаг наличия элемента</p>
+<pre><code>  one := m[&quot;one&quot;]
+  one, ok := m[&quot;one&quot;]
+</code></pre>
+</li>
+<li>
+<p>Для удаления элемента из map есть встроенная функция delete</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">12</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Maps</h3>
+        <ul>
+<li>
+<p>С элементами map можно производить операции как с обычными переменными, за исключением того, что
+от элемента нельзя взять адрес</p>
+<pre><code>  _ = &amp;ages[&quot;bob&quot;] // compile error: cannot take address of map element
+</code></pre>
+</li>
+<li>
+<p>Для итерации можно использовать <code>for range</code></p>
+<pre><code>  for name, age := range ages {
+      fmt.Printf(&quot;%s\t%d\n&quot;, name, age)
+  }
+</code></pre>
+</li>
+<li>
+<p>Порядок элементов не определен, если необходим отсортированный результат - придется
+складывать элементы в слайс и сортировать его</p>
+</li>
+<li>
+<p>В Go нет типа set, поэтому используется map вместо него</p>
+<p>var set map[string]bool
+var set2 map[string]struct{} // struct{} - empty type</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">13</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Структуры</h3>
+        <ul>
+<li>
+<p>Объединение нескольких именованных перменных (полей) различных типов</p>
+</li>
+<li>
+<p>Доступ до различных элементов - через <code>.</code></p>
+<pre><code>  type Employee struct {
+      ID        int
+      Name      string
+  }
+  var dilbert Employee
+  dilbert.ID = 1
+</code></pre>
+</li>
+<li>
+<p>Можно брать указатели на отдельные поля</p>
+</li>
+<li>
+<p>Неявное разыменование - отсутствует оператор <code>-&gt;</code></p>
+<pre><code>  var ptr = &amp;dilbert
+  ptr.ID = 2
+  (*ptr).ID = 3
+</code></pre>
+</li>
+<li>
+<p>Обычно поля объявляются по одному на строку, но можно объединять поля одного типа (как в <code>var</code>)</p>
+</li>
+<li>
+<p>Первая бука поля (заглавная или нет) определяет видимость этого поля из других пакетов</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">14</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Структуры</h3>
+        <ul>
+<li>
+<p>Zero value для структуры - комбинация zero values его полей</p>
+</li>
+<li>
+<p>Обычно, если у пакета нет функции <code>NewSmth</code> для типа <code>Smth</code>, то валидно использовать zero value этого типа</p>
+</li>
+<li>
+<p><code>struct{}</code> - пустая структура размера 0 (иногда используется в map)</p>
+</li>
+<li>
+<p>Структура может быть инициализирована через <code>{}</code> с указанием имен полей и без (не рекомендуется)</p>
+<pre><code>  type Point { X, Y int }
+  var p = Point{1, 2}
+  var p2 = Point{X: 1, Y: 2}
+  var p3 = Point{Y: 2, X: 1}
+  var p4 = Point{Y: 2} // X = zero value
+</code></pre>
+</li>
+<li>
+<p>Зачастую используются указатели на структуры, при инициализации можно сразу получить указатель</p>
+<pre><code>  var ptr = &amp;Point{}
+</code></pre>
+</li>
+<li>
+<p>Если все поля структуры сравнимы, то и структуру можно сравнивать с использованием <code>==</code> и <code>!=</code></p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">15</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Embedding</h3>
+        <ul>
+<li>
+<p>&quot;Своеобразное&quot; наследование, позволяет указать другую структуру анонимным полем и обращаться через <code>.</code> напрямую к полям (и методам) анонимного поля</p>
+<pre><code>  type Circle struct {
+          Point // Point Point
+          Radius int
+  }
+  var c = Circle{Point:  Point{1, 2}, Radius: 0}
+  c.X = 0
+  c.Point.Y = 0
+</code></pre>
+</li>
+<li>
+<p>Нельзя иметь два анонимных поля одного типа</p>
+</li>
+<li>
+<p>Видимость анонимного поля определяется видимостью имени типа (но сокращения через <code>.</code> все равно продолжат работать)</p>
+</li>
+<li>
+<p>Если возникает конфликт по именам полей двух или более анонимных полей, то краткая форма через <code>.</code> недоступна</p>
+</li>
+<li>
+<p>К полям можно навешивать тэги, которые используются некоторыми библиотеками (например, json)</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">16</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Функции</h3>
+        <pre><code>    func name(parameter-list) (result-list) {
+            body
+    }
+</code></pre>
+<ul>
+<li>Функция может принимать &gt;= 0 аргументов и возвращать &gt;= 0 значений</li>
+<li>Обычно аргументам даются имена (однако, можно их опускать или называть <code>_</code>) и редко даются имена
+возвращаемым значениями (в основном, когда из типов сразу не ясно, что возвращается)</li>
+<li>При именованных возвращаемых значениях при входе в функцию они - обычные переменные. Можно использовать
+<code>return</code> без указания возвращаемых значений, и вернутся значения из этих переменных</li>
+</ul>
+
+      
+      <span class="pagenumber">17</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Функции</h3>
+        <ul>
+<li>
+<p>Функции можно использовать как одругие типы - записывать в переменные, передавать в аргументах и т.д. (они first-class values)</p>
+</li>
+<li>
+<p>Однако, следует помнить, что переменные вне скоупа функции захватываются &quot;по ссылке&quot;</p>
+</li>
+<li>
+<p>Например, нельзя захватывать переменные в цикле:</p>
+<pre><code>  var rmdirs []func()
+  for _, d := range tempDirs() {
+      dir := d               // NOTE: necessary!
+      os.MkdirAll(dir, 0755) // creates parent directories too
+      rmdirs = append(rmdirs, func() {
+          os.RemoveAll(dir)
+      })g
+  }</code></pre>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">18</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Ошибки</h3>
+        <ul>
+<li>
+<p>Все ошибки возвращаются явным образом с типом встроенного интерфейса <code>error</code> (исключение - panic, о нем отдельно)</p>
+<pre><code>  type error interface {
+  Error() string
+</code></pre>
+<p>}</p>
+</li>
+<li>
+<p>Можно создавать ошибки различных типов, главное, чтобы они удовлетворяли интерфейсу</p>
+</li>
+<li>
+<p>Ошибки можно сравнивать с nil и между собой (устаревший вариант, после go 1.13 для сравнения используются <code>errors.Is</code> и <code>errors.As</code>)</p>
+</li>
+<li>
+<p>Метод <code>errors.Unwrap</code> вызывает соответствующий метод у типа, если он определен, либо возвращает nil</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">19</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Ошибки</h3>
+        <ul>
+<li>Ошибки могут оборачивать одна другую: <code>fmt.Errorf(&quot;failed: %w&quot;, ErrNotFound)</code></li>
+<li><code>errors.Is</code> - в цепочке ошибок есть ошибка-переменная (<code>var ErrNotFound = errors.New(&quot;not found&quot;)</code>)</li>
+<li><code>errors.As</code> - в цепочке ошибок есть ошибки с нужным типом</li>
+</ul>
+
+      
+      <span class="pagenumber">20</span>
+      </article>
+  
+  
+
+      <article>
+        <h3>Thank you</h3>
+        
+          <div class="presenter">
+            
+  
+  <p>
+    Лекция 3. Составные типы. Ошибки
+  </p>
+  
+
+          </div>
+        
+      </article>
+
+    </section>
+
+    <div id="help">
+      Use the left and right arrow keys or click the left and right
+      edges of the page to navigate between slides.<br>
+      (Press 'H' or navigate to hide this message.)
+    </div>
+
+    
+    <script src='static/jquery.js'></script>
+    <script src='static/jquery-ui.js'></script>
+    <script src='static/playground.js'></script>
+    <script src='static/play.js'></script>
+    <script>initPlayground(new HTTPTransport());</script>
+    
+
+    <script>
+      (function() {
+        
+        if (window["location"] && window["location"]["hostname"] == "talks.golang.org") {
+          var ga = document.createElement("script"); ga.type = "text/javascript"; ga.async = true;
+          ga.src = ("https:" == document.location.protocol ? "https://ssl" : "http://www") + ".google-analytics.com/ga.js";
+          var s = document.getElementsByTagName("script")[0]; s.parentNode.insertBefore(ga, s);
+        }
+      })();
+    </script>
+  </body>
+</html>
