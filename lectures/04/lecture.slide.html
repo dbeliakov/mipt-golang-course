@@ -1,0 +1,546 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Программирование на языке Go</title>
+    <meta charset='utf-8'>
+    <link rel="icon" href="static/favicon.ico">
+    <script>
+      var notesEnabled =  false ;
+    </script>
+    <script src='static/slides.js'></script>
+
+    
+
+    <script>
+      
+      if (window["location"] && window["location"]["hostname"] == "talks.golang.org") {
+        var _gaq = _gaq || [];
+        _gaq.push(["_setAccount", "UA-11222381-6"]);
+        _gaq.push(["b._setAccount", "UA-49880327-6"]);
+        window.trackPageview = function() {
+          _gaq.push(["_trackPageview", location.pathname+location.hash]);
+          _gaq.push(["b._trackPageview", location.pathname+location.hash]);
+        };
+        window.trackPageview();
+        window.trackEvent = function(category, action, opt_label, opt_value, opt_noninteraction) {
+          _gaq.push(["_trackEvent", category, action, opt_label, opt_value, opt_noninteraction]);
+          _gaq.push(["b._trackEvent", category, action, opt_label, opt_value, opt_noninteraction]);
+        };
+      }
+    </script>
+  </head>
+
+  <body style='display: none'>
+
+    <section class='slides layout-widescreen'>
+
+      <article>
+        <h1>Программирование на языке Go</h1>
+        
+        
+        
+          <div class="presenter">
+            
+  
+  <p>
+    Лекция 4. Defer и Panic. Интерфейсы. Ошибки
+  </p>
+  
+
+          </div>
+        
+      </article>
+
+  
+  
+      <article >
+      
+        <h3>Defer</h3>
+        <ul>
+<li>
+<p>Механизм отложенного вызова некоторой функции (или метода) при выходе из другой функции</p>
+</li>
+<li>
+<p>Позволяет избежать дублирований кода (особенно при явной обработке ошибок)</p>
+<pre><code>  var m sync.Mutex
+  m.Lock()
+  if err := foo(); err != nil {
+      m.Unlock() // unlock on error
+      return err
+  }
+  // ...
+  if err := bar(); err != nil {
+      m.Unlock() // unlock on error
+      return err
+  }</code></pre>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">2</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Defer</h3>
+        <ul>
+<li>
+<p>Мы можем сказать, что некоторая функция должна быть вызвана при любом раскладе при выходе из функции (даже при панике)</p>
+<pre><code>  m.Lock()
+  defer m.Unlock()
+  // ...
+  if err != nil {
+      return err // будет вызван Unlock при выходе из функции
+  }
+</code></pre>
+</li>
+<li>
+<p>Сам вызов происходит при выходе из функции, однако аргументы рассчитываются в момент объявления defer</p>
+</li>
+<li>
+<p>Функция может иметь множество объявлений defer, и гарантируется, что они будут позваны в обратном порядке их объявлению</p>
+</li>
+<li>
+<p>defer имеет отношение именно к функции (defer в if, for и прочих равносилен другим объявлениям)</p>
+</li>
+<li>
+<p>Обычно defer используется для освобождения некоторых ресурсов и объявляется сразу после захвата</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">3</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Defer</h3>
+        <ul>
+<li>
+<p>Кроме освобождения ресурсов, defer может быть полезен для выполнения различных действий при выходе из функции</p>
+<pre><code>  func bigSlowOperation() {
+      defer trace(&quot;bigSlowOperation&quot;)() // don't forget the extra parentheses
+      // ...lots of work...
+      time.Sleep(10 * time.Second) // simulate slow operation by sleeping
+  }
+  func trace(msg string) func() {
+      start := time.Now()
+      log.Printf(&quot;enter %s&quot;, msg)
+      return func() { log.Printf(&quot;exit %s (%s)&quot;, msg, time.Since(start)) }
+  }
+</code></pre>
+</li>
+<li>
+<p>Также defer может использоваться для модификации возвращаемых значений (для этого они должны быть именованными)</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">4</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Panic</h3>
+        <ul>
+<li>Экстренное завершение нормального исполнения программы с досрочным выходом из функций (пока не будет поймано)</li>
+<li>Зачастую это ситуации, когда дальнейшее выполнение может быть некорректно (например, разыменование nil, неправильное приведение типа, ...)</li>
+<li>По своей природе сильно похож на исключения в других языках (но исключения и паники используются в абсолютно разных контекстах)</li>
+<li>При выходе из функции в процессе паники вызываются все defer'ы для этой функции</li>
+<li>В случае, если паника не поймана, она приводит к завершению выполнения программы (и печатает лог для разбора)</li>
+<li>Панику можно кинуть самому с помощью функции <code>panic</code> (принимает один аргумент любого типа)</li>
+</ul>
+
+      
+      <span class="pagenumber">5</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Panic</h3>
+        <ul>
+<li>Паники зачастую используют для проверки логической неконсистентности программы (что в других языках делается через assert)</li>
+<li>&quot;Ожидаемые&quot; ошибки (сетевые, файловой системы, валидации, ...) не должны приводить к паникам</li>
+<li>Также паники бывают в ситуациях, когда теоретически ошибка может быть, но практически (с точки зрения логики кода) ее быть не должно (см. <code>regexp.MustCompile</code>)</li>
+</ul>
+
+      
+      <span class="pagenumber">6</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Recover</h3>
+        <ul>
+<li>Позволяет прекратить выполнение паники и получить переданный в нее объект</li>
+<li>Вызов <code>recover</code> вне ситуации паники возвращает nil</li>
+<li>Полезна в ситуациях, когда мы не хотим экстренно завершать программу (например, обработка одного запроса web-сервера спаниковала, но мы не хотим складывать весь сервис)</li>
+<li>Так как в процессе паники вызываются только <code>defer</code>'ы, то <code>recover</code> имеет смысл только внутри <code>defer'а</code></li>
+<li>Есть плохая, но встречающаяся практика, когда с помощью паники раскручивают стек рекурсивных вызовов до первого, где панику ловят и возвращают обычную ошибку</li>
+</ul>
+
+      
+      <span class="pagenumber">7</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Методы</h3>
+        <ul>
+<li>
+<p>Фактически, метод - обычная функция в выделенным отдельно аргументом (объявляется до имени функции)</p>
+<pre><code>  type Point struct{ X, Y float64 }
+  // traditional function
+  func Distance(p, q Point) float64 {
+      return math.Hypot(q.X-p.X, q.Y-p.Y)
+  }
+  // same thing, but as a method of the Point type
+  func (p Point) Distance(q Point) float64 {
+      return math.Hypot(q.X-p.X, q.Y-p.Y)
+  }
+</code></pre>
+</li>
+<li>
+<p>Объект вызова метода - method receiver</p>
+</li>
+<li>
+<p>Receiver может иметь любое имя (более того, имена <code>this</code> или <code>self</code> считается плохим тоном)</p>
+</li>
+<li>
+<p>Часто можно встретить, что receiver называется по первой букве типа</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">8</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Методы</h3>
+        <ul>
+<li>
+<p>Для каждого типа свой namespace для имен методов, так что они не конфликтуют с функциями и методами других типов</p>
+</li>
+<li>
+<p>Метод может быть у любого типа (не только структуры)</p>
+<pre><code>  type Path []Point
+  func (p Path) Distance() float64 {
+      ...
+  }
+</code></pre>
+</li>
+<li>
+<p>Методы могут быть объявлены только в рамках того же пакета</p>
+</li>
+<li>
+<p>Receiver такой же аргумент, как и другие, так что он передается по значению в примере выше</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">9</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Методы</h3>
+        <ul>
+<li>
+<p>Метод можно привязать не к самому типу, а к типу указателя</p>
+</li>
+<li>
+<p>В этом случае появляется возможность модифицировать receiver</p>
+</li>
+<li>
+<p>По соглашению, если есть хотя бы один pointer receiver, то все методы объявляются с pointer receiver</p>
+</li>
+<li>
+<p>Запрещено объявлять методы для типов, которые являются алиасами на указатели</p>
+<pre><code>  type P *int
+
+  func (p P) foo() { // compile error: invalid receiver type P (P is a pointer type)
+  }
+</code></pre>
+</li>
+<li>
+<p>Метод с pointer receiver можно вызывать как на указателе, так и на самом объекте (будет неявное взятие адреса)</p>
+</li>
+<li>
+<p>Однако, нельзя позвать такой метод для значения, от которого нельзя взять адрес (например, значение в map через [])</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">10</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Методы</h3>
+        <ul>
+<li>Методы, имеющие receiver по значению, мы можем позвать и для указателей (так как всегда можно получить значение по указателю)</li>
+<li>Так как receiver участвует как обычный аргумент, он вполне может быть <code>nil</code>, и это не будет ошибкой (некоторые библиотеки обрабатывают это)</li>
+<li>При встраивании типов доступен сокращенный синтаксис вызова методов (по аналогии с полями)</li>
+<li>Можно использовать методы как значения (передавать в функции и т.д.)</li>
+<li>Выражение <code>p.Distance</code> (method value) возвращает функцию, привязанную к <code>p</code> (т.е. нет необходимости вызывать ее как метод)</li>
+<li>Выражение <code>Point.Distance</code> (method expression) возвращает функцию, где receiver становится первым аргументом функции</li>
+<li>Все те же правила для имен экспортируемых/неэкспортируемых сущностей применимы и для методов</li>
+</ul>
+
+      
+      <span class="pagenumber">11</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Интерфейсы</h3>
+        <ul>
+<li>Механизм обобщения (generalization) в Go</li>
+<li>Применяется &quot;утиная типизация&quot; - нет необходимости явно указывать, какие интерфейсы имплементирует данный тип (в отличии от многих других языков)</li>
+<li>Интерфейс - абстрактный тип, он только описывает набор методов (и никак не связан с имплементацией)</li>
+<li>Если мы работаем с значением типа интерфейс, мы только можем знать, что объект может делать, но ни чем он является (но можем предполагать, об этом отдельно :) )</li>
+</ul>
+
+      
+      <span class="pagenumber">12</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Интерфейсы</h3>
+        <ul>
+<li>
+<p>В Go интерфейсы, обычно, имеют достаточно малый набор методов (см. интерфейсы стандартной библиотеки)</p>
+</li>
+<li>
+<p>Можно воспринимать интерфейс как контракт между вызывающей стороной и вызываемой</p>
+</li>
+<li>
+<p>При этом, вызываемой стороне неважно, какой тип скрывается за интерфейсом - важно лишь наличие нужных методов</p>
+<pre><code>  package fmt
+
+  func Fprintf(w io.Writer, format string, args ...interface{}) (int, error)
+
+  func Printf(format string, args ...interface{}) (int, error) {
+      return Fprintf(os.Stdout, format, args...)
+  }
+
+  func Sprintf(format string, args ...interface{}) string {
+      var buf bytes.Buffer
+      Fprintf(&amp;buf, format, args...)
+      return buf.String()
+  }</code></pre>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">13</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Интерфейсы</h3>
+        <ul>
+<li>
+<p>Среди интерфейсов стандартной библиотеки можно выделить <code>io.Writer</code>, <code>io.Reader</code>,
+<code>io.Closer</code>, их комбинации (похоже на встраивание), <code>fmt.Stringer</code></p>
+<pre><code>  type ReadWriter interface {
+      Reader
+      Writer
+  }
+</code></pre>
+</li>
+<li>
+<p>Pointer receiver имеет важное значение для интерфейсов. Например в ситуации,</p>
+<pre><code>  func (p *Point) String() string {...}
+</code></pre>
+</li>
+</ul>
+<p>только указатель на Point будет удовлетворять интерфейсу <code>fmt.Stringer</code></p>
+<ul>
+<li>Хорошим тоном считается имплементировать методы стандартных интерфейсов вместо использования своих сигнатур</li>
+<li>Зачастую можно встретить подход: функция возвращает как можно больше (конкретный тип), но требует как можно меньше (интерфейс)</li>
+</ul>
+
+      
+      <span class="pagenumber">14</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Интерфейсы</h3>
+        <ul>
+<li>Из-за отсутствия в языке поддержки дженериков (которые скоро будут!), в большом количестве мест встречается пустой интерфейс <code>interface{}</code> - ему удовлетворяет любой тип</li>
+<li>Фактически, интерфейс - структура с двумя полями: type и value. Zero value для интерфейса - оба поля nil</li>
+<li>Динамический тип определяет, является ли интерфейс nil или нет</li>
+<li>Вызов метода на nil-интерфейсе вызывает панику</li>
+<li>Нужно понимать, что nil-интерфейс и интерфейс, содержащий nil (т.е. имеющий динамический тип) - разные понятия</li>
+<li>Интерфейсы можно сравнивать между собой - они равны, если имеют одинаковые значения и одинаковый динамический тип</li>
+</ul>
+
+      
+      <span class="pagenumber">15</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Type assertion</h3>
+        <ul>
+<li>
+<p>Если мы знаем, какой тип скрывается за интерфейсом (или, например, что скрывается тип, который удовлетворяет большему интерфейсу)
+мы можем привести значение к этому типу</p>
+</li>
+<li>
+<p>Этот механизм используется, в том числе, для получения конкретных ошибок из интерфейса <code>error</code></p>
+<pre><code>  var w io.Writer
+  w = os.Stdout
+  f := w.(*os.File)          // success: f == os.Stdout
+  c := w.(*bytes.Buffer)     // panic: interface holds *os.File, not *bytes.Buffer
+  c, ok := w.(*bytes.Buffer) // don't panic, but ok == false</code></pre>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">16</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Type switch</h3>
+        <ul>
+<li>
+<p>Позволяет выбрать из предположений нужный тип. Например, может использоваться при написании <code>Printf</code></p>
+<pre><code>  switch x.(type) {
+      case nil:       // ...
+      case int, uint: // ...
+      case bool:      // ...
+      case string:    // ...
+      default:        // ...
+  }</code></pre>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">17</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Ошибки</h3>
+        <ul>
+<li>
+<p>Все ошибки возвращаются явным образом с типом встроенного интерфейса <code>error</code> (исключение - panic, о нем отдельно)</p>
+<pre><code>  type error interface {
+  Error() string
+</code></pre>
+<p>}</p>
+</li>
+<li>
+<p>Можно создавать ошибки различных типов, главное, чтобы они удовлетворяли интерфейсу</p>
+</li>
+<li>
+<p>Ошибки можно сравнивать с nil и между собой (устаревший вариант, после go 1.13 для сравнения используются <code>errors.Is</code> и <code>errors.As</code>)</p>
+</li>
+<li>
+<p>Метод <code>errors.Unwrap</code> вызывает соответствующий метод у типа, если он определен, либо возвращает nil</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">18</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Ошибки</h3>
+        <ul>
+<li>Ошибки могут оборачивать одна другую: <code>fmt.Errorf(&quot;failed: %w&quot;, ErrNotFound)</code></li>
+<li><code>errors.Is</code> - в цепочке ошибок есть ошибка-переменная (<code>var ErrNotFound = errors.New(&quot;not found&quot;)</code>)</li>
+<li><code>errors.As</code> - в цепочке ошибок есть ошибки с нужным типом</li>
+</ul>
+
+      
+      <span class="pagenumber">19</span>
+      </article>
+  
+  
+
+      <article>
+        <h3>Thank you</h3>
+        
+          <div class="presenter">
+            
+  
+  <p>
+    Лекция 4. Defer и Panic. Интерфейсы. Ошибки
+  </p>
+  
+
+          </div>
+        
+      </article>
+
+    </section>
+
+    <div id="help">
+      Use the left and right arrow keys or click the left and right
+      edges of the page to navigate between slides.<br>
+      (Press 'H' or navigate to hide this message.)
+    </div>
+
+    
+    <script src='static/jquery.js'></script>
+    <script src='static/jquery-ui.js'></script>
+    <script src='static/playground.js'></script>
+    <script src='static/play.js'></script>
+    <script>initPlayground(new HTTPTransport());</script>
+    
+
+    <script>
+      (function() {
+        
+        if (window["location"] && window["location"]["hostname"] == "talks.golang.org") {
+          var ga = document.createElement("script"); ga.type = "text/javascript"; ga.async = true;
+          ga.src = ("https:" == document.location.protocol ? "https://ssl" : "http://www") + ".google-analytics.com/ga.js";
+          var s = document.getElementsByTagName("script")[0]; s.parentNode.insertBefore(ga, s);
+        }
+      })();
+    </script>
+  </body>
+</html>
