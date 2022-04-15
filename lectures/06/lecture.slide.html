@@ -1,0 +1,280 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Программирование на языке Go</title>
+    <meta charset='utf-8'>
+    <link rel="icon" href="static/favicon.ico">
+    <script>
+      var notesEnabled =  false ;
+    </script>
+    <script src='static/slides.js'></script>
+
+    
+
+    <script>
+      
+      if (window["location"] && window["location"]["hostname"] == "talks.golang.org") {
+        var _gaq = _gaq || [];
+        _gaq.push(["_setAccount", "UA-11222381-6"]);
+        _gaq.push(["b._setAccount", "UA-49880327-6"]);
+        window.trackPageview = function() {
+          _gaq.push(["_trackPageview", location.pathname+location.hash]);
+          _gaq.push(["b._trackPageview", location.pathname+location.hash]);
+        };
+        window.trackPageview();
+        window.trackEvent = function(category, action, opt_label, opt_value, opt_noninteraction) {
+          _gaq.push(["_trackEvent", category, action, opt_label, opt_value, opt_noninteraction]);
+          _gaq.push(["b._trackEvent", category, action, opt_label, opt_value, opt_noninteraction]);
+        };
+      }
+    </script>
+  </head>
+
+  <body style='display: none'>
+
+    <section class='slides layout-widescreen'>
+
+      <article>
+        <h1>Программирование на языке Go</h1>
+        
+        
+        
+          <div class="presenter">
+            
+  
+  <p>
+    Лекция 6. Механизмы синхронизации
+  </p>
+  
+
+          </div>
+        
+      </article>
+
+  
+  
+      <article >
+      
+        <h3>Мультиплексирование</h3>
+        <ul>
+<li>
+<p>Мультиплексирование позволяет объединять чтение (или запись) для нескольких каналов</p>
+</li>
+<li>
+<p>Из-за удобства этого механизма некоторые сущности, не связанные с коммуникацией, используют каналы
+(<code>context.Done</code>, <code>time.After</code>)</p>
+</li>
+<li>
+<p>Кроме этого, данный механизмм позволяет прочитать или записать что-то без блокировки (т.е. в случае, если бы
+случилась блокировка, мы выйдем, ничего не записав и не прочитав)</p>
+<pre><code>  select {
+  case &lt;-ch:
+      // ...
+  case &lt;-ch2:
+      // ...
+  default:
+      // ...
+  }</code></pre>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">2</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Отмена исполнения горутин</h3>
+        <ul>
+<li>Есть несколько способов (фактически, один, но разными сущностями) правильно отменить исполнение горутины</li>
+<li>Один - передать канал, из которого в select дожидаться сообщения о том, что можно завершиться</li>
+<li>Недостаток - сложно отменить некоторые потенциально долгие вещи (такие, как http-запрос)</li>
+<li>Другой способ - передавать контекст (пакет <code>context</code>)</li>
+<li>Две ключевых роли контекста - передача сигнала об отмене и передача данных далее при обработке (например, пользовательского запроса)</li>
+</ul>
+
+      
+      <span class="pagenumber">3</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Race condition</h3>
+        <ul>
+<li>При выполнении программы конкурентно мы не можем утверждать, что событие в одной горутине
+произошло раньше или позже, чем другое событие в другой горутине</li>
+<li>Функция (или метод) concurrent-safe в случае, когда ее можно использовать из разных
+горутин без дополнительной синхронизации. Тип concurrent-safe, если все его методы concurrent-safe</li>
+<li>В большинстве языков программирования (включая Go) большинство типов не concurrent-safe,
+так как накладывает дополнительные расходы, которые далеко не всегда нужны</li>
+<li>В то же время, большинство функций в пакетах считаются concurrent-safe (но если они меняют
+глобальные объекты, то могут быть и не concurrent-safe)</li>
+</ul>
+
+      
+      <span class="pagenumber">4</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Race condition</h3>
+        <ul>
+<li>Состояние гонки - ошибка проектирования многопоточной системы или приложения, при которой работа системы
+или приложения зависит от того, в каком порядке выполняются части кода</li>
+<li>Зачастую, состояние гонки возникает из-за отсутствия атомарности некоторых действий (т.е. другая
+горутина может увидеть промежуточный результат в моменте выполнения операции)</li>
+<li>Даже большинство операций с числами не атомарны</li>
+<li>В большинстве ситуаций, когда некоторые данные меняются из нескольких горутин, возникает
+data race</li>
+</ul>
+
+      
+      <span class="pagenumber">5</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Data race</h3>
+        <ul>
+<li>Нужно понимать, что data race может возникать только когда хотя бы одна горутина из нескольких
+меняет данные</li>
+<li>Вполне корректно, например, инициализировать map в одном месте и потом <strong>читать</strong> из него
+из нескольких горутин</li>
+<li>Но как только появляется горутина, которая пытается <strong>писать</strong> в map, то сразу же возникает
+data race</li>
+<li>Каналы позволяют избегать data race путем коммуникации через общий объект, но данные передаются
+в виде копии (и не возникает конкурентного доступа к общей памяти)</li>
+</ul>
+
+      
+      <span class="pagenumber">6</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>sync.Mutex</h3>
+        <ul>
+<li>Мьютекс позволяет &quot;ограничить&quot; критические секции кода, где могут возникать гонки</li>
+<li>Когда мьютекс захвачен (<code>.Lock()</code> выполнился), гарантируется, что данная горутина единственная,
+кто сейчас имеет заблокированный мьютекс</li>
+<li>Таким образом, мы можем &quot;приостановить&quot; исполнение других горутин, оперирующих с теми же
+данными до момента, пока мы не закончим свои действия</li>
+<li>Обязательно необходимо отпустить мьютекс после выполнения операции (<code>.Unlock()</code>)</li>
+<li>При этом страдает &quot;параллелилизм&quot; программы - появляются точки синхронизации</li>
+<li>Под мьютекс следует заносить только критические секции, и стараться разблокировать его как можно
+быстрее</li>
+</ul>
+
+      
+      <span class="pagenumber">7</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>sync.RWMutex</h3>
+        <ul>
+<li>Продвинутый мьютекс, который позволяет конкурентно читать какие-либо данные и эксклюзивно их модифицировать</li>
+<li>Полезен в ситуациях, когда данные редко обновляются, но часто используются (например, раз в минуту
+приходит новый курс доллара, а в течении этой минуты происходит множество конкурентных операций, использующих
+это значение)</li>
+<li>Для использования читателями появляются методы <code>.RLock()</code> и <code>.RUnlock()</code></li>
+</ul>
+
+      
+      <span class="pagenumber">8</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>sync.Once</h3>
+        <ul>
+<li>Позволяет выполнить некоторую операцию ровно один раз (в одной из горутин, остальные дождутся
+выполнения)</li>
+<li>Полезен, когда необходимо произвести некоторую инициализацию в момент первого вызова
+и в дальнейшем использовать эти данные</li>
+<li>Объект имеет только один метод <code>.Do</code>, принимающий функцию для выполнения</li>
+</ul>
+
+      
+      <span class="pagenumber">9</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Race detector</h3>
+        <ul>
+<li>Если запустить <code>go test</code>, <code>go build</code> или <code>go run</code> с флагом <code>-race</code>, будет собрана специальная
+версия программы, которая будет медленнее исполняться (так что это не для продакшена), но будет
+отслеживать обращения к общей памяти</li>
+<li>Кроме этого, в этой версии программы будут отслеживаться все события синхронизации</li>
+<li>В случае, если находятся обращения к общей памяти без синхронизации, то программа сообщает об этом</li>
+<li>Встроенный race detector позволяет разработчикам сэкономить часы и даже дни поиска ошибок</li>
+<li>Подробнее можно почитать в <code>The Go Memory Model</code></li>
+</ul>
+
+      
+      <span class="pagenumber">10</span>
+      </article>
+  
+  
+
+      <article>
+        <h3>Thank you</h3>
+        
+          <div class="presenter">
+            
+  
+  <p>
+    Лекция 6. Механизмы синхронизации
+  </p>
+  
+
+          </div>
+        
+      </article>
+
+    </section>
+
+    <div id="help">
+      Use the left and right arrow keys or click the left and right
+      edges of the page to navigate between slides.<br>
+      (Press 'H' or navigate to hide this message.)
+    </div>
+
+    
+    <script src='static/jquery.js'></script>
+    <script src='static/jquery-ui.js'></script>
+    <script src='static/playground.js'></script>
+    <script src='static/play.js'></script>
+    <script>initPlayground(new HTTPTransport());</script>
+    
+
+    <script>
+      (function() {
+        
+        if (window["location"] && window["location"]["hostname"] == "talks.golang.org") {
+          var ga = document.createElement("script"); ga.type = "text/javascript"; ga.async = true;
+          ga.src = ("https:" == document.location.protocol ? "https://ssl" : "http://www") + ".google-analytics.com/ga.js";
+          var s = document.getElementsByTagName("script")[0]; s.parentNode.insertBefore(ga, s);
+        }
+      })();
+    </script>
+  </body>
+</html>
