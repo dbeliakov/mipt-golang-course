@@ -1,0 +1,375 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Программирование на языке Go</title>
+    <meta charset='utf-8'>
+    <link rel="icon" href="static/favicon.ico">
+    <script>
+      var notesEnabled =  false ;
+    </script>
+    <script src='static/slides.js'></script>
+
+    
+
+    <script>
+      
+      if (window["location"] && window["location"]["hostname"] == "talks.golang.org") {
+        var _gaq = _gaq || [];
+        _gaq.push(["_setAccount", "UA-11222381-6"]);
+        _gaq.push(["b._setAccount", "UA-49880327-6"]);
+        window.trackPageview = function() {
+          _gaq.push(["_trackPageview", location.pathname+location.hash]);
+          _gaq.push(["b._trackPageview", location.pathname+location.hash]);
+        };
+        window.trackPageview();
+        window.trackEvent = function(category, action, opt_label, opt_value, opt_noninteraction) {
+          _gaq.push(["_trackEvent", category, action, opt_label, opt_value, opt_noninteraction]);
+          _gaq.push(["b._trackEvent", category, action, opt_label, opt_value, opt_noninteraction]);
+        };
+      }
+    </script>
+  </head>
+
+  <body style='display: none'>
+
+    <section class='slides layout-widescreen'>
+
+      <article>
+        <h1>Программирование на языке Go</h1>
+        
+        
+        
+          <div class="presenter">
+            
+  
+  <p>
+    Лекция 7. Тестирование
+  </p>
+  
+
+          </div>
+        
+      </article>
+
+  
+  
+      <article >
+      
+        <h3>Тестирование</h3>
+        <ul>
+<li>С увеличением кодовой базы проекта (и количества фичей) все сложнее тестировать код
+&quot;руками&quot;</li>
+<li>Чем сложнее система, тем больше вероятность что-то сломать при внесении изменений в код</li>
+<li>Современные парадигмы разработки продуктов зачастую предполагают большое количетсво
+&quot;мелких&quot; релизов, автоматически доезжающих до продакшена (с помощью CI/CD)</li>
+<li>При таком подходе невозможно на каждое изменение протестировать весь функционал -
+на помощь приходят автоматизированные тесты (unit, функциональные, интеграционные, ...)</li>
+<li>Основное назначение тестов (очень грубо) - проверить, что код работает так, как ожидается</li>
+<li>В отличии от многих других языков программирования, инструменты для тестирования
+программ входят в стандартный тулчейн</li>
+</ul>
+
+      
+      <span class="pagenumber">2</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Тестирование в Go</h3>
+        <ul>
+<li>Тесты в Go располагаются в файлах <code>*_test.go</code>. Эти файлы &quot;не видны&quot; при сборке программы и
+используются только при запуске тестов через <code>go test</code></li>
+<li>Кроме тестов, в этих файлах могут находиться бенчмарки и примеры кода для документации</li>
+<li>Тест - обычная функция с именем <code>Test***</code>, принимающая в качестве аргумента специальный
+объект <code>t *testing.T</code></li>
+<li>Аналогично, бенчмарки носят имя <code>Benchmark***</code>; примеры - <code>Example***</code></li>
+<li>Момент вызова <code>go test</code> функции в <code>*_test.go</code> файлах сканируются и создается временный
+<code>main</code>-пакет, в котором вызываются нужные тесты</li>
+</ul>
+
+      
+      <span class="pagenumber">3</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Тестирование в Go</h3>
+        <ul>
+<li>
+<p>Функция для теста выглядит следующим образом:</p>
+<pre><code>  func TestName(t *testing.T) {
+      // ...
+  }
+</code></pre>
+</li>
+<li>
+<p>Суффикс (после префикса <code>Test</code>) должен начинаться с большой буквы</p>
+</li>
+<li>
+<p>Имя теста должно пояснять, какую функциональность (или часть функциональности) проверяет этот тест</p>
+</li>
+<li>
+<p>Аргумент функции необходим для сообщения о неуспешности проверок и логирования дополнительной информации</p>
+</li>
+<li>
+<p>Сообщить об ошибке можно через <code>t.Errorf</code>, завершить тест - <code>t.Fatalf</code></p>
+</li>
+<li>
+<p>Есть некоторое количество пакетов, позволяющих не взаимодействовать с <code>t</code> напрямую</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">4</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Рандомизированное тестирование</h3>
+        <ul>
+<li>Тесты с заранее известными параметрами и результатом (табличные тесты) - один из вариантов тестов,
+позволяющий протестировать важные и граничные кейсы работы</li>
+<li>Другой подход - рандомизированные тесты, когда входные параметры генерируются случайным образом</li>
+<li>В этом случае, результаты можно вычислять, например, более простым (и менее эффективным)
+алгоритмом, который гораздо проще в имплементации</li>
+<li>В случае рандомизированных тестов важно выводить в лог достаточно информации для воспроизведения
+прохождения тестов</li>
+<li>К рандомизированным тестам можно отнести fuzzing - когда мы передаем функции
+неправильные, неожиданные или случайные данные. <a href="https://www.youtube.com/watch?v=EJVp13f_aIs" target="_blank" rel="noopener">Фаззинг: новое юнит тестирование. Дмитрий Вьюков, Google.</a></li>
+</ul>
+
+      
+      <span class="pagenumber">5</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Тестирование в Go</h3>
+        <ul>
+<li>Тестировать можно также и main пакеты - в этом случае, зачастую, основную логику работы
+выносят в отдельную функцию, а main занимается тривиальными операциями (например, парсит флаги)</li>
+<li>В этом случае важно, чтобы тестируемые функции не вызывали функции, завершающие выполнение
+программы - например, <code>log.Fatal</code> или <code>os.Exit</code></li>
+</ul>
+
+      
+      <span class="pagenumber">6</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Тестирование в Go</h3>
+        <ul>
+<li>Тесты (условно) можно разделить на два вида: <code>White Box</code> и <code>Black Box</code></li>
+<li>В случае <code>Black Box</code> тестов проверяется только внешнее API (пакета, сервиса, ...)</li>
+<li>В случае тестирования пакета можно тесты положить в отдельный пакет (с именем <code>*_test</code>),
+в этом случае тесты не будут иметь доступа до внутренностей пакета</li>
+<li>В случае <code>White Box</code> тесты пишутся с оглядкой на внутренности пакета</li>
+<li>С одной стороны, <code>Black Box</code> тесты проверяют реальные кейсы использования пакета, более
+стабильны и не требуют модификации при изменении внутренней логики работы</li>
+<li>С другой стороны, <code>White Box</code> тесты позволяют производить тестирование более гранулярно и, например,
+менять внутренности имплементации для избежания внешних зависимостей (например, <code>timeFunc</code>
+в задаче <code>jwt</code>)</li>
+</ul>
+
+      
+      <span class="pagenumber">7</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>External test packages</h3>
+        <ul>
+<li>Тесты для пакета могут располагаться в отдельных пакетах (с именем <code>*_test</code>)</li>
+<li>Это может быть полезно как для ограничения доступа к внутренностям пакета, так и для
+разрешения циклических зависимостей в тестах</li>
+<li>Однако, когда мы пишем external test package для <code>White Box</code> тестов, возникает проблема с доступом
+к внутренним объявлениям пакета</li>
+<li>В этом случае можно встретить файлы <code>export_test.go</code>, которые нужны для &quot;экспортирования&quot;
+внутренних сущностей в тесты (<a href="https://golang.org/src/fmt/export_test.go" target="_blank" rel="noopener">пример в fmt</a>)</li>
+</ul>
+
+      
+      <span class="pagenumber">8</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Полезные пакеты для тестирования</h3>
+        <ul>
+<li><a href="https://github.com/stretchr/testify" target="_blank" rel="noopener">stretchr/testify</a> - пакет, предоставляющий более удобные
+инструменты для написания тестов</li>
+<li><a href="https://github.com/golang/mock" target="_blank" rel="noopener">golang/mock</a> - пакет для генерации и использования моков в тестах</li>
+<li><a href="https://github.com/uber-go/goleak" target="_blank" rel="noopener">uber-go/goleak</a> - Goroutine leak detector</li>
+<li><a href="https://github.com/DATA-DOG/go-sqlmock" target="_blank" rel="noopener">DATA-DOG/go-sqlmock</a> - библиотека для написания моков к базам данных,
+работающим через <code>database/sql</code></li>
+<li><a href="https://golang.org/pkg/net/http/httptest/" target="_blank" rel="noopener">httptest</a> - стандартный пакет, упрощающий тестирование
+http-сервисов</li>
+</ul>
+
+      
+      <span class="pagenumber">9</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Mocking</h3>
+        <ul>
+<li>Зачастую в unit-тестах мы хотим протестировать определенную бизнес-логику &quot;в вакууме&quot;</li>
+<li>В этом случае мы можем &quot;подменить&quot; реальную имплементацию чего-то пустышкой (удовлетворяющей
+нужному нам интерфейсу), которая будет всегда вести себя так, как мы запрограммировали</li>
+<li>Например, мы можем исключить отправку нотификаций пользователям, лишь проверяя, что данный вызов
+состоялся</li>
+<li>Или мы можем вместо использования временной базы описать ожидаемые запросы и результат их выполнения</li>
+<li>В том числе, mocking позволяет избежать &quot;флапающих&quot; тестов (когда без каких-либо изменений
+тест то проходит, то нет)</li>
+</ul>
+
+      
+      <span class="pagenumber">10</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Code coverage</h3>
+        <ul>
+<li>Одна из распространенных методик оценки &quot;насколько хорошо протестирован пакет&quot;</li>
+<li>При запуске тестов просчитывается, какие строки кода исполнялись (и, возможно, сколько раз)</li>
+<li>Хорошее покрытие кода тестами абсолютно не означает, что код не содержит багов</li>
+<li>Тем не менее, хорошо покрытый тестами код с большей вероятностью работает стабильно и
+делает то, что от него ожидают, в важных кейсах</li>
+<li>Зачастую в популярных пакетах можно встретить <code>code coverage</code> порядка 80-90%. Это отличный показатель,
+так как из-за явной обработки ошибок появляется много строк кода, исполнение которых маловероятно и тяжело для тестирования</li>
+<li>Go имеет встроенную утилиту для работы с <code>code coverage</code>: <code>go tool cover</code></li>
+</ul>
+
+      
+      <span class="pagenumber">11</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Benchmarks</h3>
+        <ul>
+<li>Бенчмарк - функция в файлах <code>*_test.go</code>, начинающаяся на <code>Benchmark</code> и принимающая в
+аргументе <code>b *testing.B</code></li>
+<li>Объект аргумента предоставляет большинство методов, доступных в <code>testing.T</code>, дополняя
+их специфичными для бенчмарков методами и полями</li>
+<li>Основное - <code>b.N</code> - количество итераций, которое нужно проделать</li>
+<li>Чтобы запустить бенчмарки, необходимо передать в <code>go test</code> аргумент <code>-bench</code> с regexp
+бенчмарков, которые запустить (в случае <code>.</code> запускаются все бенчмарки пакета)</li>
+<li>Зачастую бенчмарки испольуются для сравнения различных имплементаций или времени работы
+алгоритма в зависимости от размера входных данных</li>
+<li><a href="https://pkg.go.dev/golang.org/x/tools/cmd/benchcmp" target="_blank" rel="noopener">https://pkg.go.dev/golang.org/x/tools/cmd/benchcmp</a> -
+утилита, позволяющая сравнивать между собой различные запуски бенчмарков</li>
+</ul>
+
+      
+      <span class="pagenumber">12</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Profiling</h3>
+        <ul>
+<li>Профилирование помогает найти узкие места в программе, которые можно оптимизировать</li>
+<li>CPU profile - для запущенного процесса ОС с некоторой периодичностью (раз в несколько миллисекунд)
+прерывает исполнение и записывает, в каких местах исполнения находится программа</li>
+<li>Heap profile - внутренняя функция выделения памяти записывает кто вызывает аллокации</li>
+<li>Blocking profile - записываются все события блокировки горутин (на мьютексах, каналах, ...)</li>
+<li>Обычно, профиль собирают на бенчмарках или на реальных программах, так как тесты зачастую
+заточены больше на проверку логики, чем на оценку эффективности работы</li>
+<li>Для отображения профиля, помимо самого профиля, необходим бинарник с программой. В случае
+вызова <code>go test</code> с записью профиля остается собранный временный бинарник с тестами</li>
+</ul>
+
+      
+      <span class="pagenumber">13</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Примеры</h3>
+        <ul>
+<li>Кроме тестов и бенчмарков, в <code>*_test.go</code> файлах располагаются примеры кода для документации</li>
+<li>Это позволяет избежать ситуаций, когда примеры кода в документации устарели и не запускаются</li>
+<li>Функция примера не принимает аргументов и начинается с <code>Example</code></li>
+<li>Посмотреть сгенерированную документацию можно через <code>go doc</code></li>
+<li>Если пример заканчивается на комментарий <code>// Output:</code>, то при тестировании будет вызвано
+сравнение вывода примера с каноничным</li>
+</ul>
+
+      
+      <span class="pagenumber">14</span>
+      </article>
+  
+  
+
+      <article>
+        <h3>Thank you</h3>
+        
+          <div class="presenter">
+            
+  
+  <p>
+    Лекция 7. Тестирование
+  </p>
+  
+
+          </div>
+        
+      </article>
+
+    </section>
+
+    <div id="help">
+      Use the left and right arrow keys or click the left and right
+      edges of the page to navigate between slides.<br>
+      (Press 'H' or navigate to hide this message.)
+    </div>
+
+    
+    <script src='static/jquery.js'></script>
+    <script src='static/jquery-ui.js'></script>
+    <script src='static/playground.js'></script>
+    <script src='static/play.js'></script>
+    <script>initPlayground(new HTTPTransport());</script>
+    
+
+    <script>
+      (function() {
+        
+        if (window["location"] && window["location"]["hostname"] == "talks.golang.org") {
+          var ga = document.createElement("script"); ga.type = "text/javascript"; ga.async = true;
+          ga.src = ("https:" == document.location.protocol ? "https://ssl" : "http://www") + ".google-analytics.com/ga.js";
+          var s = document.getElementsByTagName("script")[0]; s.parentNode.insertBefore(ga, s);
+        }
+      })();
+    </script>
+  </body>
+</html>
