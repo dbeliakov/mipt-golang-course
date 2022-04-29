@@ -1,0 +1,290 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Программирование на языке Go</title>
+    <meta charset='utf-8'>
+    <link rel="icon" href="static/favicon.ico">
+    <script>
+      var notesEnabled =  false ;
+    </script>
+    <script src='static/slides.js'></script>
+
+    
+
+    <script>
+      
+      if (window["location"] && window["location"]["hostname"] == "talks.golang.org") {
+        var _gaq = _gaq || [];
+        _gaq.push(["_setAccount", "UA-11222381-6"]);
+        _gaq.push(["b._setAccount", "UA-49880327-6"]);
+        window.trackPageview = function() {
+          _gaq.push(["_trackPageview", location.pathname+location.hash]);
+          _gaq.push(["b._trackPageview", location.pathname+location.hash]);
+        };
+        window.trackPageview();
+        window.trackEvent = function(category, action, opt_label, opt_value, opt_noninteraction) {
+          _gaq.push(["_trackEvent", category, action, opt_label, opt_value, opt_noninteraction]);
+          _gaq.push(["b._trackEvent", category, action, opt_label, opt_value, opt_noninteraction]);
+        };
+      }
+    </script>
+  </head>
+
+  <body style='display: none'>
+
+    <section class='slides layout-widescreen'>
+
+      <article>
+        <h1>Программирование на языке Go</h1>
+        
+        
+        
+          <div class="presenter">
+            
+  
+  <p>
+    Лекция 8. Reflection
+  </p>
+  
+
+          </div>
+        
+      </article>
+
+  
+  
+      <article >
+      
+        <h3>Reflection</h3>
+        <ul>
+<li>Рефлексия — способность программы исследовать собственную структуру, в особенности через типы.
+Это форма метапрограммирования и отличный источник путаницы. (c) <a href="https://habr.com/ru/post/415171/" target="_blank" rel="noopener">Законы рефлексии в Gо</a></li>
+<li>Пригождается, когда необходимо реализовать обобщенную функцию, про аргументы которой мы ничего не знаем</li>
+</ul>
+
+      
+      <span class="pagenumber">2</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Fprintf</h3>
+        <ul>
+<li>
+<p>Типичный пример - <code>fmt.Fprintf</code>. Эта функция умеет форматировать почти любые входные данные (в том
+числе типы, объявленные пользователем)</p>
+</li>
+<li>
+<p>Для вывода значений мы можем использовать type switch, однако мы будем ограничены конечным набором типов
+(а еще надо уметь форматировать слайсы и словари любых типов и любой вложенности)</p>
+<pre><code>  type stringer interface {
+       String() string
+  }
+  switch x := x.(type) {
+  case stringer:
+       return x.String()
+  case string:
+       return x
+  case int:
+       return strconv.Itoa(x)
+  // ...similar cases for int16, uint32, and so on...
+</code></pre>
+</li>
+<li>
+<p>Для реализации задуманного нам надо уметь заглядывать в структуру неизвестных заранее нам типов</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">3</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>reflect.Type</h3>
+        <ul>
+<li>
+<p>Один из двух основных типов пакета <code>reflect</code></p>
+</li>
+<li>
+<p><code>Type</code> представляет некоторый тип в Go и позволяет узнавать многое о том, как этот тип устроен
+(какие есть поля, аргументы функций, ...)</p>
+</li>
+<li>
+<p>Функция <code>TypeOf</code> принимает <code>interface{}</code> и возвращает <code>Type</code> для переданного аргумента</p>
+<pre><code>  t := reflect.TypeOf(3)  // a reflect.Type
+  fmt.Println(t.String()) // &quot;int&quot;
+  fmt.Println(t)          // &quot;int&quot;
+</code></pre>
+</li>
+<li>
+<p>Стоит учитывать, что <code>TypeOf</code> всегда возвращает динамический тип (т.е. в случае передачи интерфейса будет
+возвращена информация о конкретном типе, не о интерфейсе)</p>
+<pre><code>  var w io.Writer = os.Stdout
+  fmt.Println(reflect.TypeOf(w)) // &quot;*os.File&quot;
+</code></pre>
+</li>
+<li>
+<p>Для дебага бывает удобно использовать <code>%T</code> в <code>Printf</code>, который внутри использует <code>reflect.TypeOf</code></p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">4</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>reflect.Value</h3>
+        <ul>
+<li>
+<p>Второй основной тип пакета <code>reflect</code></p>
+</li>
+<li>
+<p><code>Value</code> может хранить любое значение любого типа</p>
+</li>
+<li>
+<p><code>ValueOf</code> принимает <code>interface{}</code> и возвращает <code>Value</code>, содержащий значение</p>
+</li>
+<li>
+<p>Результат <code>ValueOf</code> всегда конкретный, но может также содержать значение интерфейса</p>
+<pre><code>  v := reflect.ValueOf(3) // a reflect.Value
+  fmt.Println(v)          // &quot;3&quot;
+  fmt.Printf(&quot;%v\n&quot;, v)   // &quot;3&quot;
+  fmt.Println(v.String()) // NOTE: &quot;&lt;int Value&gt;&quot;
+</code></pre>
+</li>
+<li>
+<p>По <code>Value</code> получить обратно <code>interface{}</code> со значением можно с помощью метода <code>reflect.Value.Interface</code></p>
+</li>
+<li>
+<p>Разница между <code>interface{}</code> и <code>reflect.Value</code> заключается в том, что без знания конкретного типа
+мы не можем толком ничего сделать с <code>interface{}</code> (т.к. мы можем использовать только type assertion). <code>reflect.Value</code>
+же позволяет изучать содержание, ничего не зная о типе</p>
+</li>
+</ul>
+
+      
+      <span class="pagenumber">5</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>reflect.Value</h3>
+        <ul>
+<li>Метод <code>Kind</code> позволяет получить значение перечисления, чем является данное значение</li>
+<li>Для массивов и слайсов (и для строк): <code>Len</code> и <code>Index</code></li>
+<li>Для структур: <code>NumField</code> и <code>Field</code> (включая встроенные и сокрытые)</li>
+<li>Для словарей: <code>MapKeys</code> и <code>MapIndex</code></li>
+<li>Для указателей: <code>IsNil</code> и <code>Elem</code></li>
+<li>Для интерфейсов: <code>IsNil</code> и <code>Elem</code></li>
+</ul>
+
+      
+      <span class="pagenumber">6</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>reflect.Value</h3>
+        <ul>
+<li>Кроме доступа до данных, <code>Value</code> позволяет также изменять их</li>
+<li>Однако, изменять можно только значения с адресом (можно проверить через <code>CanAddr</code>)</li>
+<li>Кроме этого, нельзя изменять неэкспортированные поля структур</li>
+<li>В общем случае, проверить, можно ли менять значение можно через <code>CanSet</code></li>
+</ul>
+
+      
+      <span class="pagenumber">7</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Тэги</h3>
+        <ul>
+<li>Ранее мы использовали тэги при работе с <code>encoding/json</code>. Данный механизм применяется в большом количестве
+пакетов и позволяет указывать дополнительную инофрмацию как надо обрабатывать то или иное поле структуры</li>
+<li>Получить тэг для поля можно через поле <code>Tag</code> у <code>reflect.Type</code></li>
+<li>Далее получить интересующее нас значение можно через <code>Get</code></li>
+</ul>
+
+      
+      <span class="pagenumber">8</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Reflection</h3>
+        <ul>
+<li>В ситуациях, где это возможно, старайтесь избегать использование reflection</li>
+<li>Использование reflections сильно замедляет код (см., например, <a href="https://github.com/mailru/easyjson" target="_blank" rel="noopener">easyjson</a>)</li>
+<li>Очень легко допустить ошибку (например, не предусмотреть возможные входные параметры) при написании кода с reflection</li>
+<li>Нужно максимально проверять возможность операций перед их выполнением (иначе вылетит паника)</li>
+<li>Кроме этого, использование reflection сильно затрудняет возможности автоматическим анализаторам и программам
+для рефакторинга</li>
+</ul>
+
+      
+      <span class="pagenumber">9</span>
+      </article>
+  
+  
+
+      <article>
+        <h3>Thank you</h3>
+        
+          <div class="presenter">
+            
+  
+  <p>
+    Лекция 8. Reflection
+  </p>
+  
+
+          </div>
+        
+      </article>
+
+    </section>
+
+    <div id="help">
+      Use the left and right arrow keys or click the left and right
+      edges of the page to navigate between slides.<br>
+      (Press 'H' or navigate to hide this message.)
+    </div>
+
+    
+    <script src='static/jquery.js'></script>
+    <script src='static/jquery-ui.js'></script>
+    <script src='static/playground.js'></script>
+    <script src='static/play.js'></script>
+    <script>initPlayground(new HTTPTransport());</script>
+    
+
+    <script>
+      (function() {
+        
+        if (window["location"] && window["location"]["hostname"] == "talks.golang.org") {
+          var ga = document.createElement("script"); ga.type = "text/javascript"; ga.async = true;
+          ga.src = ("https:" == document.location.protocol ? "https://ssl" : "http://www") + ".google-analytics.com/ga.js";
+          var s = document.getElementsByTagName("script")[0]; s.parentNode.insertBefore(ga, s);
+        }
+      })();
+    </script>
+  </body>
+</html>
