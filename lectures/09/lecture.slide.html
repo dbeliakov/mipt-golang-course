@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Программирование на языке Go</title>
+    <meta charset='utf-8'>
+    <link rel="icon" href="static/favicon.ico">
+    <script>
+      var notesEnabled =  false ;
+    </script>
+    <script src='static/slides.js'></script>
+
+    
+
+    <script>
+      
+      if (window["location"] && window["location"]["hostname"] == "talks.golang.org") {
+        var _gaq = _gaq || [];
+        _gaq.push(["_setAccount", "UA-11222381-6"]);
+        _gaq.push(["b._setAccount", "UA-49880327-6"]);
+        window.trackPageview = function() {
+          _gaq.push(["_trackPageview", location.pathname+location.hash]);
+          _gaq.push(["b._trackPageview", location.pathname+location.hash]);
+        };
+        window.trackPageview();
+        window.trackEvent = function(category, action, opt_label, opt_value, opt_noninteraction) {
+          _gaq.push(["_trackEvent", category, action, opt_label, opt_value, opt_noninteraction]);
+          _gaq.push(["b._trackEvent", category, action, opt_label, opt_value, opt_noninteraction]);
+        };
+      }
+    </script>
+  </head>
+
+  <body style='display: none'>
+
+    <section class='slides layout-widescreen'>
+
+      <article>
+        <h1>Программирование на языке Go</h1>
+        
+        
+        
+          <div class="presenter">
+            
+  
+  <p>
+    Лекция 8. Generics
+  </p>
+  
+
+          </div>
+        
+      </article>
+
+  
+  
+      <article >
+      
+        <h3>Generics</h3>
+        <ul>
+<li>Дженерики являются одним из замых значительных изменений в языке со времен первого open source релиза</li>
+<li>Дженерики позволяют писать обобщенные функции и типы, избавляя от необходимости писать много дублирующегося кода для разных типов</li>
+<li>В релиз 1.18 были добавлены: type parameters для функций и типов, определение интерфейсов как набора типов и автоматический вывод типов при вызовах</li>
+</ul>
+
+      
+      <span class="pagenumber">2</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Type parameters</h3>
+        <ul>
+<li>Функции и типы могут теперь иметь отдельный список параметров, описывающий типы, используемые для описания аргументов или внутренностей типа</li>
+<li>В момент вызова с такими параметрами происходит инстанцирование, состоящее из двух шагов: подстановка конкретых типов на основании аргументов и проверка компилятором совместимости конкретных типов с ограничениями</li>
+<li>После инстанцирования получается (скрытая от нас) обычная функция или тип, что никак не влияет на производительность программы</li>
+</ul>
+
+      
+      <span class="pagenumber">3</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Type sets</h3>
+        <ul>
+<li>Наподобие того, как обычный тип описывает множество значений агрумента, &quot;тип&quot; параметра-типа определяет множество типов, подходящих для аргумента</li>
+<li>Такой мета-тип называется <strong>type constraint</strong>. Некоторое количетсво таких типов можно найти в пакете <a href="https://pkg.go.dev/golang.org/x/exp/constraints" target="_blank" rel="noopener">constraints</a></li>
+<li>Type constraint должен являться интерфейсом, таким образом, дженерики несколько расширяют понятие интерфейса</li>
+</ul>
+
+      
+      <span class="pagenumber">4</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Type sets</h3>
+        <ul>
+<li>Мы можем посмотреть на интерфейс как &quot;ограничение&quot;, описывающее множество типов, удовлетворяющих этому интерфейсу</li>
+<li>С этой точки зрения интерфейс описывает множество типов. И в go1.18 появилась возможность явно добавлять типы в это множетсво (при этом не обязательно содержащие интерфейсы)</li>
+<li>Таким образом <code>interface {int | bool | string}</code> описывает интерфейс, которому удовлетворяют три типа (которые, при этом, не имеют типов)</li>
+<li>Синтаксис <code>~string</code> говорит, что в множество включен не только тип <code>string</code>, но и типы, основанные на нем</li>
+<li>Дополнительно, появилось ключевое слово <code>any</code>, эквивалентное <code>interface{}</code></li>
+</ul>
+
+      
+      <span class="pagenumber">5</span>
+      </article>
+  
+  
+  
+      <article >
+      
+        <h3>Type inference</h3>
+        <ul>
+<li>Type inference позволяет опускать type parameters в большинстве случаев, автоматически выводя их из аргументов</li>
+<li>Вывод типа может работать на основании аргументов и на основании других type constraints</li>
+<li>Если type inference завершился неуспешно, всегда можно вручную указать список type parameters</li>
+</ul>
+
+      
+      <span class="pagenumber">6</span>
+      </article>
+  
+  
+
+      <article>
+        <h3>Thank you</h3>
+        
+          <div class="presenter">
+            
+  
+  <p>
+    Лекция 8. Generics
+  </p>
+  
+
+          </div>
+        
+      </article>
+
+    </section>
+
+    <div id="help">
+      Use the left and right arrow keys or click the left and right
+      edges of the page to navigate between slides.<br>
+      (Press 'H' or navigate to hide this message.)
+    </div>
+
+    
+    <script src='static/jquery.js'></script>
+    <script src='static/jquery-ui.js'></script>
+    <script src='static/playground.js'></script>
+    <script src='static/play.js'></script>
+    <script>initPlayground(new HTTPTransport());</script>
+    
+
+    <script>
+      (function() {
+        
+        if (window["location"] && window["location"]["hostname"] == "talks.golang.org") {
+          var ga = document.createElement("script"); ga.type = "text/javascript"; ga.async = true;
+          ga.src = ("https:" == document.location.protocol ? "https://ssl" : "http://www") + ".google-analytics.com/ga.js";
+          var s = document.getElementsByTagName("script")[0]; s.parentNode.insertBefore(ga, s);
+        }
+      })();
+    </script>
+  </body>
+</html>
