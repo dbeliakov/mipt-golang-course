@@ -14,3 +14,4 @@
 6. [Механизмы синхронизации](lectures/06)
 7. [Тестирование](lectures/07)
 8. [Reflection](lectures/08)
+9. [Generics](lectures/09)
