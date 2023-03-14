@@ -17,4 +17,3 @@ func DecomposeGRB(img image.Image) DecomposedImage {
 func ComposeRGB(dec DecomposedImage) image.Image {
 	return nil
 }
-g
