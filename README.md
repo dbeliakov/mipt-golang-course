@@ -2,10 +2,6 @@
 
 [Таблица с результатами](https://go.dbeliakov.ru)
 
-[Список проектов](projects)
-
-[Пример проекта](https://github.com/dbeliakov/stocks-bot)
-
 1. [Введение](lectures/01)
 2. [Базовые конструкции языка](lectures/02)
 3. [Составные типы. Ошибки](lectures/03)

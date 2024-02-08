@@ -1,13 +1,11 @@
-module mipt-golang-course
+module github.com/dbeliakov/mipt-golang-course
 
-go 1.19
+go 1.21
 
 require (
-	github.com/dbeliakov/mipt-golang-course v0.0.0-20230309095316-095ea8d3a714
-	github.com/go-chi/chi v1.5.4
-	github.com/golang/mock v1.6.0
-	github.com/stretchr/testify v1.8.2
-	golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0
+	github.com/go-chi/chi/v5 v5.0.11
+	github.com/stretchr/testify v1.8.4
+	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3
 )
 
 require (
