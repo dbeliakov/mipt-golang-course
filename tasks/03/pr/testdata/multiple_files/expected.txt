@@ -1,0 +1,44 @@
+testdata/multiple_files/a.txt	Page: 0
+
+a
+b
+c
+d
+e
+f
+
+
+
+testdata/multiple_files/b.txt	Page: 0
+
+Hello!
+
+
+
+
+
+
+
+
+testdata/multiple_files/c.txt	Page: 0
+
+#include <iostream>
+
+int main() {
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+
+
+
+
+testdata/multiple_files/c.txt	Page: 1
+
+
+    std::cout << "Hello, World!\n";
+
+    return 0;
+}
+
+
+
+
